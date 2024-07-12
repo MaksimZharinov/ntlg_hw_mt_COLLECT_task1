@@ -5,8 +5,8 @@ import java.util.concurrent.BlockingQueue;
 public class Main {
 
     private static final String CHARS = "abc";
-    private static final int TEXTS = 10_000;
-    private static final int LENGTH = 100_000;
+    private static final int TEXTS = 10_000;    //10_000
+    private static final int LENGTH = 100_000;  //100_000
     private static final char A = 'a';
     private static final char B = 'b';
     private static final char C = 'c';
@@ -28,12 +28,22 @@ public class Main {
         new Thread(() -> {
             for (int i = 0; i < TEXTS; i++) {
                 String text = generateText(CHARS, LENGTH);
-                aQueue.add(text);
-                bQueue.add(text);
-                cQueue.add(text);
+                try {
+                    aQueue.put(text);
+                    bQueue.put(text);
+                    cQueue.put(text);
+                } catch (InterruptedException e) {
+                    return;
+                }
             }
         }).start();
 
+        checkThread(A, aQueue);
+        checkThread(B, bQueue);
+        checkThread(C, cQueue);
+
+
+        //printResult();
     }
 
     public static String generateText(String letters, int length) {
@@ -51,22 +61,36 @@ public class Main {
                 .count();
     }
 
-    public static void checkThread(char ch, ArrayBlockingQueue chQueue) {
+    public static void checkThread(char ch, BlockingQueue<String> chQueue) {
 
-        new Thread(() -> {
-            while (!chQueue.isEmpty()) {
-                String text = null;
-                try {
-                    text = chQueue.take().toString();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                int tmpMax = howMany(text, ch);
-                if (tmpMax > maxChA) {
-                    maxChA = tmpMax;
-                    maxTextA = text;
-                }
+        Thread thread = new Thread(() -> {
+            String text = null;
+            try {
+                text = chQueue.take();
+            } catch (InterruptedException e) {
+                return;
             }
-        }).start();
+            int tmpMax = howMany(text, ch);
+            if (tmpMax > maxChA) {
+                maxChA = tmpMax;
+                maxTextA = text;
+            }
+        });
+        thread.start();
+    }
+
+    public static void printResult() {
+        System.out.println("The maximum number of 'a' characters is: " +
+                maxChA +
+                "\nCharacters are contained in the text: " +
+                maxTextA);
+        System.out.println("The maximum number of 'b' characters is: " +
+                maxChB +
+                "\nCharacters are contained in the text: " +
+                maxTextB);
+        System.out.println("The maximum number of 'c' characters is: " +
+                maxChC +
+                "\nCharacters are contained in the text: " +
+                maxTextC);
     }
 }
